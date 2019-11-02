@@ -1,6 +1,6 @@
 {
     "name": "IoTT_DigitraxBuffers",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "keywords": [
       "MQTT Gateway", "io", "LocoNet Gateway", "Digitrax Buffers"
     ],
