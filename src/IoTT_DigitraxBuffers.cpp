@@ -12,6 +12,16 @@ txFct sendMessage = NULL;
 
 uint32_t nextBufferUpdate = millis();
 
+typedef struct
+{
+	uint32_t lastActivity;
+	uint16_t devAddr;
+}protocolEntry;
+
+const uint8_t switchProtLen = 20;
+protocolEntry switchProtocol[switchProtLen];
+uint8_t swWrPtr = 0;
+bool bushbyWatch = false;
 
 void setTxFunction(txFct newFct)
 {
@@ -48,12 +58,27 @@ void setSwitchStatus(uint16_t swiNum, bool swiPos, bool coilStatus)
 {
 	uint16_t byteNr = trunc(swiNum/4);
 	uint8_t inpPosStat = 0;
+	swWrPtr = (swWrPtr + 1) % switchProtLen;
+	switchProtocol[swWrPtr].devAddr = swiNum;
+	switchProtocol[swWrPtr].lastActivity = millis();
 	if (swiPos)
 		inpPosStat |= 0x02;
 	if (coilStatus)
 		inpPosStat |= 0x01;
     switchPositionBuffer[byteNr] &= ~(0x03<<(2*(swiNum % 4)));
     switchPositionBuffer[byteNr] |= inpPosStat<<(2*(swiNum % 4));
+}
+
+uint32_t getLastSwitchActivity(uint16_t swiNum)
+{
+	uint8_t thisOfs = swWrPtr + swWrPtr;
+	for (uint8_t i = 0; i < switchProtLen; i++)
+	{
+		uint8_t thisEntry = (thisOfs - i) % switchProtLen;
+		if (switchProtocol[thisEntry].devAddr == swiNum)
+			return switchProtocol[thisEntry].lastActivity;
+	}
+	return 0;
 }
 
 uint8_t getSwiPosition(uint16_t swiNum)
@@ -142,6 +167,11 @@ slotData * getSlotData(uint8_t slotNum)
 	return &slotBuffer[slotNum];
 }
 
+void enableBushbyWatch(bool enableBushby)
+{
+	bushbyWatch = enableBushby;
+}
+
 uint8_t getBushbyStatus()
 {
 	slotData * ctrlSlot = getSlotData(0x7F);
@@ -154,8 +184,6 @@ void processBufferUpdates()
 	{
 		nextBufferUpdate += bufferUpdateInterval;
 		//check if system slot need update
-		
-		
 	}
 }
 
@@ -164,12 +192,16 @@ void processLocoNetMsg(lnReceiveBuffer * newData)
   {
       switch (newData->lnData[0])
       {
-        case 0xB0:; //OPC_SW_REQ
+        case 0xB0: 
+			if (bushbyWatch) 
+				if (getBushbyStatus() > 0) 
+					break; //OPC_SW_REQ
         case 0xB1:; //OPC_SW_REP
         case 0xBD:  //OPC_SW_ACK
         {
           uint16_t swiAddr = ((newData->lnData[1] & 0x7F)) + ((newData->lnData[2] & 0x0F)<<7);
           uint8_t inpPosStat = (newData->lnData[2] & 0x30)>>4; //Direction and ON Status
+//          Serial.printf("Set Switch %i to %i\n", swiAddr, inpPosStat);
           setSwitchStatus(swiAddr, (inpPosStat & 0x02)>>1, (inpPosStat & 0x01));
           if (handleSwiEvent)
 			handleSwiEvent(swiAddr, (inpPosStat & 0x02)>>1, (inpPosStat & 0x01));

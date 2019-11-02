@@ -34,12 +34,14 @@ uint8_t getBDStatus(uint16_t bdNum);
 uint8_t getSwiPosition(uint16_t swiNum);
 uint8_t getSwiCoilStatus(uint16_t swiNum);
 uint8_t getSwiStatus(uint16_t swiNum);
+uint32_t getLastSwitchActivity(uint16_t swiNum);
 uint8_t getSignalAspect(uint16_t sigNum);
 uint16_t getAnalogValue(uint16_t analogNum);
 uint8_t getButtonValue(uint16_t buttonNum);
 slotData * getSlotData(uint8_t slotNum);
 uint8_t getBushbyStatus();
 uint8_t getPowerStatus();
+void enableBushbyWatch(bool enableBushby);
 
 void setAnalogValue(uint16_t analogNum, uint16_t analogValue);
 void setSwitchStatus(uint16_t swiNum, bool swiPos, bool coilStatus);
