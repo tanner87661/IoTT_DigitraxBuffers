@@ -71,7 +71,7 @@ void setSwitchStatus(uint16_t swiNum, bool swiPos, bool coilStatus)
 
 uint32_t getLastSwitchActivity(uint16_t swiNum)
 {
-	uint8_t thisOfs = swWrPtr + swWrPtr;
+	uint8_t thisOfs = swWrPtr + switchProtLen;
 	for (uint8_t i = 0; i < switchProtLen; i++)
 	{
 		uint8_t thisEntry = (thisOfs - i) % switchProtLen;
